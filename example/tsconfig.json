@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@deulect/rich-text-input": ["../src/index"],
+      "@deulect/rich-text-input/*": ["../src/*"]
+    }
+  }
+}

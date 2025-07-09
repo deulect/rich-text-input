@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["RichTextInputModule"]
+  },
+  "android": {
+    "modules": ["com.deulect.richtextinput.RichTextInputModule"]
+  }
+}
