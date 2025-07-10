@@ -6,11 +6,10 @@ import { RichTextInputModuleEvents } from './RichTextInput.types';
  * Native module for RichTextInput functionality
  * 
  * This module provides the bridge between JavaScript and native iOS rich text input functionality.
- * It handles imperative methods that operate on specific view instances.
+ * The imperative methods are defined directly on the view component and accessible via the view ref.
  */
 declare class RichTextInputModule extends NativeModule<RichTextInputModuleEvents> {
-  // Note: Most imperative methods are called directly on view instances through the native view manager
-  // This module primarily handles events and any global functionality
+  // Module-level functionality can be added here if needed in the future
 }
 
 // This call loads the native module object from the JSI.

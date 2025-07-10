@@ -20,11 +20,11 @@ class RichTextInputView: ExpoView {
   private let placeholderLabel = UILabel()
   
   // MARK: - Event Dispatchers
-  // These will send events back to JavaScript
-  private let onChange = EventDispatcher()
-  private let onSelectionChange = EventDispatcher()
-  private let onFocus = EventDispatcher()
-  private let onBlur = EventDispatcher()
+  // These will send events back to JavaScript using custom event names to avoid conflicts
+  private let onRichTextChange = EventDispatcher()
+  private let onRichTextSelectionChange = EventDispatcher()
+  private let onRichTextFocus = EventDispatcher()
+  private let onRichTextBlur = EventDispatcher()
   
   // MARK: - Properties
   private var placeholderText: String?
@@ -233,6 +233,7 @@ class RichTextInputView: ExpoView {
     // If no selection, set typing attributes for new text
     if selectedRange.length == 0 {
       applyTypingAttributes(style)
+      sendSelectionChangeEvent() // Update active styles in UI
       return
     }
     
@@ -253,8 +254,9 @@ class RichTextInputView: ExpoView {
     textView.selectedRange = selectedRange // Restore selection
     isSettingValue = false
     
-    // Send change event
+    // Send change event and selection change event
     sendChangeEvent()
+    sendSelectionChangeEvent()
   }
   
   private func applyTypingAttributes(_ style: [String: Any]) {
@@ -263,28 +265,30 @@ class RichTextInputView: ExpoView {
     
     // Get current font
     let currentFont = typingAttributes[.font] as? UIFont ?? baseFont
-    var fontDescriptor = currentFont.fontDescriptor
-    var symbolicTraits = fontDescriptor.symbolicTraits
+    let fontSize = currentFont.pointSize
     
-    // Apply bold
-    if richTextStyle.bold {
-      symbolicTraits.insert(.traitBold)
+    // Create new font with desired traits
+    var newFont: UIFont
+    
+    let hasBold = richTextStyle.bold
+    let hasItalic = richTextStyle.italic
+    
+    if hasBold && hasItalic {
+      // Bold + Italic
+      newFont = UIFont.systemFont(ofSize: fontSize, weight: .bold).withTraits(.traitItalic) ?? 
+                UIFont.boldSystemFont(ofSize: fontSize)
+    } else if hasBold {
+      // Bold only
+      newFont = UIFont.boldSystemFont(ofSize: fontSize)
+    } else if hasItalic {
+      // Italic only
+      newFont = UIFont.italicSystemFont(ofSize: fontSize)
     } else {
-      symbolicTraits.remove(.traitBold)
+      // Regular
+      newFont = UIFont.systemFont(ofSize: fontSize)
     }
     
-    // Apply italic
-    if richTextStyle.italic {
-      symbolicTraits.insert(.traitItalic)
-    } else {
-      symbolicTraits.remove(.traitItalic)
-    }
-    
-    // Create new font with updated traits
-    if let newFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits) {
-      let newFont = UIFont(descriptor: newFontDescriptor, size: currentFont.pointSize)
-      typingAttributes[.font] = newFont
-    }
+    typingAttributes[.font] = newFont
     
     // Apply underline
     if richTextStyle.underline {
@@ -447,7 +451,7 @@ class RichTextInputView: ExpoView {
     
     // Convert current attributedText to RichTextValue format
     guard let attributedText = textView.attributedText else {
-      onChange([
+      onRichTextChange([
         "value": [
           "text": "",
           "spans": []
@@ -458,7 +462,7 @@ class RichTextInputView: ExpoView {
     
     let richTextValue = RichTextConverter.fromNSAttributedString(attributedText)
     
-    onChange([
+    onRichTextChange([
       "value": richTextValue.toDictionary()
     ])
   }
@@ -468,7 +472,7 @@ class RichTextInputView: ExpoView {
     guard !isSettingValue else { return }
     
     let selection = getSelection()
-    onSelectionChange(selection)
+    onRichTextSelectionChange(selection)
   }
   
   private func getActiveStylesAtSelection() -> [String: Any] {
@@ -545,11 +549,11 @@ extension RichTextInputView: UITextViewDelegate {
   }
   
   func textViewDidBeginEditing(_ textView: UITextView) {
-    onFocus([:])
+    onRichTextFocus([:])
   }
   
   func textViewDidEndEditing(_ textView: UITextView) {
-    onBlur([:])
+    onRichTextBlur([:])
   }
   
   func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
@@ -575,3 +579,5 @@ extension RichTextInputView: UITextViewDelegate {
     return true
   }
 }
+
+

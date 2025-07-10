@@ -27,15 +27,6 @@ public class RichTextInputModule: Module {
     // Accessible via: requireNativeModule('RichTextInput')
     Name("RichTextInput")
 
-    // MARK: - Global Events
-    // Events that can be sent from any instance of the module
-    Events(
-      "onChange",           // Fired when text content changes: { value: RichTextValue }
-      "onSelectionChange",  // Fired when selection changes: { start: number, end: number, activeStyles: RichTextStyle }
-      "onFocus",           // Fired when text view gains focus: { }
-      "onBlur"             // Fired when text view loses focus: { }
-    )
-
     // MARK: - View Component Definition
     // Defines the native view component that can be rendered in React Native
     View(RichTextInputView.self) {
@@ -64,13 +55,13 @@ public class RichTextInputModule: Module {
         }
         
         // Validate that the value has the expected structure
-        guard let text = value["text"] as? String else {
+        guard value["text"] as? String != nil else {
           print("RichTextInput: Warning - initialValue.text must be a string")
           return
         }
         
-        // Spans are optional - default to empty array if not provided
-        let spans = value["spans"] as? [[String: Any]] ?? []
+        // Spans are optional - validate they exist (we don't need to use the value here)
+        _ = value["spans"] as? [[String: Any]] ?? []
         
         // Set the initial value on the view
         view.setInitialValue(value)
@@ -185,11 +176,12 @@ public class RichTextInputModule: Module {
 
       // MARK: - View Events
       // Events that this specific view instance can dispatch to JavaScript
+      // Using custom event names to avoid conflicts with standard React Native events
       Events(
-        "onChange",         // { value: RichTextValue } - Text content changed
-        "onSelectionChange", // { start: number, end: number, activeStyles: RichTextStyle } - Selection changed
-        "onFocus",          // { } - Text view gained focus
-        "onBlur"            // { } - Text view lost focus
+        "onRichTextChange",         // { value: RichTextValue } - Text content changed
+        "onRichTextSelectionChange", // { start: number, end: number, activeStyles: RichTextStyle } - Selection changed
+        "onRichTextFocus",          // { } - Text view gained focus
+        "onRichTextBlur"            // { } - Text view lost focus
       )
 
       // MARK: - Imperative Commands
@@ -205,7 +197,7 @@ public class RichTextInputModule: Module {
        * Example:
        * ref.current.applyStyle({ bold: true, italic: false })
        */
-      AsyncFunction("applyStyle") { [weak self] (view: RichTextInputView, style: [String: Any]) in
+      AsyncFunction("applyStyle") { (view: RichTextInputView, style: [String: Any]) in
         // Validate style parameter
         guard !style.isEmpty else {
           print("RichTextInput: Warning - applyStyle called with empty style object")
@@ -229,7 +221,7 @@ public class RichTextInputModule: Module {
        * Clears all text content from the input.
        * This will trigger an onChange event with empty RichTextValue.
        */
-      AsyncFunction("clear") { [weak self] (view: RichTextInputView) in
+      AsyncFunction("clear") { (view: RichTextInputView) in
         view.clear()
       }
       
@@ -238,7 +230,7 @@ public class RichTextInputModule: Module {
        * Programmatically focuses the text input and shows the keyboard.
        * This will trigger an onFocus event.
        */
-      AsyncFunction("focus") { [weak self] (view: RichTextInputView) in
+      AsyncFunction("focus") { (view: RichTextInputView) in
         view.focus()
       }
       
@@ -247,7 +239,7 @@ public class RichTextInputModule: Module {
        * Programmatically removes focus from the text input and hides the keyboard.
        * This will trigger an onBlur event.
        */
-      AsyncFunction("blur") { [weak self] (view: RichTextInputView) in
+      AsyncFunction("blur") { (view: RichTextInputView) in
         view.blur()
       }
       
@@ -258,7 +250,7 @@ public class RichTextInputModule: Module {
        * 
        * @returns Promise<{ start: number, end: number, activeStyles: RichTextStyle }>
        */
-      AsyncFunction("getSelection") { [weak self] (view: RichTextInputView) -> [String: Any] in
+      AsyncFunction("getSelection") { (view: RichTextInputView) -> [String: Any] in
         return view.getSelection()
       }
       
@@ -269,7 +261,7 @@ public class RichTextInputModule: Module {
        * 
        * @param text - The text to insert
        */
-      AsyncFunction("insertText") { [weak self] (view: RichTextInputView, text: String) in
+      AsyncFunction("insertText") { (view: RichTextInputView, text: String) in
         guard !text.isEmpty else {
           print("RichTextInput: Warning - insertText called with empty string")
           return
@@ -286,7 +278,7 @@ public class RichTextInputModule: Module {
        * @param end - End position of the range to replace
        * @param text - The replacement text
        */
-      AsyncFunction("replaceText") { [weak self] (view: RichTextInputView, start: Int, end: Int, text: String) in
+      AsyncFunction("replaceText") { (view: RichTextInputView, start: Int, end: Int, text: String) in
         // Validate range parameters
         guard start >= 0 && end >= start else {
           print("RichTextInput: Warning - replaceText called with invalid range: start=\(start), end=\(end)")
@@ -303,7 +295,7 @@ public class RichTextInputModule: Module {
        * @param start - Start position of the selection
        * @param end - End position of the selection (same as start for cursor position)
        */
-      AsyncFunction("setSelection") { [weak self] (view: RichTextInputView, start: Int, end: Int) in
+      AsyncFunction("setSelection") { (view: RichTextInputView, start: Int, end: Int) in
         // Validate range parameters
         guard start >= 0 && end >= start else {
           print("RichTextInput: Warning - setSelection called with invalid range: start=\(start), end=\(end)")
@@ -319,7 +311,7 @@ public class RichTextInputModule: Module {
        * 
        * @returns Promise<{ text: string, spans: RichTextSpan[] }>
        */
-      AsyncFunction("getValue") { [weak self] (view: RichTextInputView) -> [String: Any] in
+      AsyncFunction("getValue") { (view: RichTextInputView) -> [String: Any] in
         return view.getValue()
       }
       
@@ -330,9 +322,9 @@ public class RichTextInputModule: Module {
        * 
        * @param value - The new rich text value
        */
-      AsyncFunction("setValue") { [weak self] (view: RichTextInputView, value: [String: Any]) in
+      AsyncFunction("setValue") { (view: RichTextInputView, value: [String: Any]) in
         // Validate value parameter
-        guard let text = value["text"] as? String else {
+        guard value["text"] as? String != nil else {
           print("RichTextInput: Warning - setValue called with invalid value (missing text)")
           return
         }

@@ -67,10 +67,10 @@ export interface BlurEventPayload {
  * Events that the RichTextInput module can emit
  */
 export interface RichTextInputModuleEvents {
-  onChange: (params: ChangeEventPayload) => void;
-  onSelectionChange: (params: SelectionChangeEventPayload) => void;
-  onFocus: (params: FocusEventPayload) => void;
-  onBlur: (params: BlurEventPayload) => void;
+  onRichTextChange: (params: ChangeEventPayload) => void;
+  onRichTextSelectionChange: (params: SelectionChangeEventPayload) => void;
+  onRichTextFocus: (params: FocusEventPayload) => void;
+  onRichTextBlur: (params: BlurEventPayload) => void;
   [key: string]: (...args: any[]) => void;
 }
 
@@ -83,7 +83,13 @@ export interface RichTextInputViewProps {
   // Core rich text props
   initialValue?: RichTextValue | null;
   
-  // Event handlers
+  // Event handlers (using custom event names to avoid conflicts with React Native)
+  onRichTextChange?: (event: { nativeEvent: ChangeEventPayload }) => void;
+  onRichTextSelectionChange?: (event: { nativeEvent: SelectionChangeEventPayload }) => void;
+  onRichTextFocus?: (event: { nativeEvent: FocusEventPayload }) => void;
+  onRichTextBlur?: (event: { nativeEvent: BlurEventPayload }) => void;
+  
+  // Convenience props that match standard TextInput for easier migration
   onChange?: (event: { nativeEvent: ChangeEventPayload }) => void;
   onSelectionChange?: (event: { nativeEvent: SelectionChangeEventPayload }) => void;
   onFocus?: (event: { nativeEvent: FocusEventPayload }) => void;
@@ -123,22 +129,22 @@ export interface RichTextInputRef {
   /**
    * Apply formatting style to the current selection
    */
-  applyStyle: (style: RichTextStyle) => void;
+  applyStyle: (style: RichTextStyle) => Promise<void>;
   
   /**
    * Clear all text content
    */
-  clear: () => void;
+  clear: () => Promise<void>;
   
   /**
    * Focus the text input
    */
-  focus: () => void;
+  focus: () => Promise<void>;
   
   /**
    * Blur the text input
    */
-  blur: () => void;
+  blur: () => Promise<void>;
   
   /**
    * Get current selection and active styles
@@ -148,17 +154,17 @@ export interface RichTextInputRef {
   /**
    * Insert text at the current cursor position
    */
-  insertText: (text: string) => void;
+  insertText: (text: string) => Promise<void>;
   
   /**
    * Replace text in the specified range
    */
-  replaceText: (start: number, end: number, text: string) => void;
+  replaceText: (start: number, end: number, text: string) => Promise<void>;
   
   /**
    * Set the selection range
    */
-  setSelection: (start: number, end: number) => void;
+  setSelection: (start: number, end: number) => Promise<void>;
   
   /**
    * Get the current rich text value
@@ -168,7 +174,7 @@ export interface RichTextInputRef {
   /**
    * Set the rich text value
    */
-  setValue: (value: RichTextValue) => void;
+  setValue: (value: RichTextValue) => Promise<void>;
 }
 
 // MARK: - Additional Props

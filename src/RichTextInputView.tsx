@@ -1,7 +1,6 @@
 import { requireNativeView } from 'expo';
 import * as React from 'react';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { UIManager, findNodeHandle } from 'react-native';
 
 import {
   RichTextInputViewProps,
@@ -17,20 +16,6 @@ import {
 const NativeRichTextInputView: React.ComponentType<RichTextInputViewProps> = 
   requireNativeView('RichTextInput');
 
-// Command constants for UIManager dispatch
-const Commands = {
-  APPLY_STYLE: 'applyStyle',
-  CLEAR: 'clear',
-  FOCUS: 'focus',
-  BLUR: 'blur',
-  GET_SELECTION: 'getSelection',
-  INSERT_TEXT: 'insertText',
-  REPLACE_TEXT: 'replaceText',
-  SET_SELECTION: 'setSelection',
-  GET_VALUE: 'getValue',
-  SET_VALUE: 'setValue',
-};
-
 /**
  * RichTextInputView component that provides rich text editing capabilities
  * 
@@ -44,37 +29,20 @@ const Commands = {
 const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((props, ref) => {
   const nativeRef = useRef<any>(null);
   
-  // Helper function to dispatch commands to native view
-  const dispatchCommand = (commandName: string, args: any[] = []) => {
-    const nodeHandle = findNodeHandle(nativeRef.current);
-    if (nodeHandle) {
-      UIManager.dispatchViewManagerCommand(
-        nodeHandle,
-        commandName,
-        args
-      );
-    } else {
-      console.warn(`RichTextInput: Unable to dispatch ${commandName} - node handle not found`);
-    }
-  };
-  
-  // Helper function to call async native methods
-  const callAsyncMethod = async (methodName: string, ...args: any[]): Promise<any> => {
+  // Helper function to call native view methods
+  const callNativeMethod = async (methodName: string, ...args: any[]): Promise<any> => {
     try {
-      const nodeHandle = findNodeHandle(nativeRef.current);
-      if (!nodeHandle) {
-        throw new Error('Node handle not found');
+      if (!nativeRef.current) {
+        throw new Error('Native view ref not available');
       }
       
-      // For async methods, we need to use the native module's async functions
-      // This is a workaround - in practice, you might need to adjust based on how
-      // Expo modules handle async view methods
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Fallback implementation
-          resolve({});
-        }, 0);
-      });
+      // In Expo Modules, AsyncFunctions defined in Views are callable directly on the view ref
+      const method = (nativeRef.current as any)[methodName];
+      if (typeof method !== 'function') {
+        throw new Error(`Method ${methodName} not found on native view`);
+      }
+      
+      return await method(...args);
     } catch (error) {
       console.warn(`RichTextInput: ${methodName} failed:`, error);
       throw error;
@@ -87,34 +55,50 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      * Apply formatting style to the current selection
      * @param style - The formatting style to apply
      */
-    applyStyle: (style: RichTextStyle) => {
+    applyStyle: async (style: RichTextStyle) => {
       if (!isRichTextStyle(style)) {
         console.warn('RichTextInput: applyStyle received invalid style object');
         return;
       }
       
-      dispatchCommand(Commands.APPLY_STYLE, [style]);
+      try {
+        await callNativeMethod('applyStyle', style);
+      } catch (error) {
+        console.warn('RichTextInput: applyStyle failed:', error);
+      }
     },
     
     /**
      * Clear all text content
      */
-    clear: () => {
-      dispatchCommand(Commands.CLEAR);
+    clear: async () => {
+      try {
+        await callNativeMethod('clear');
+      } catch (error) {
+        console.warn('RichTextInput: clear failed:', error);
+      }
     },
     
     /**
      * Focus the text input
      */
-    focus: () => {
-      dispatchCommand(Commands.FOCUS);
+    focus: async () => {
+      try {
+        await callNativeMethod('focus');
+      } catch (error) {
+        console.warn('RichTextInput: focus failed:', error);
+      }
     },
     
     /**
      * Blur the text input
      */
-    blur: () => {
-      dispatchCommand(Commands.BLUR);
+    blur: async () => {
+      try {
+        await callNativeMethod('blur');
+      } catch (error) {
+        console.warn('RichTextInput: blur failed:', error);
+      }
     },
     
     /**
@@ -123,7 +107,7 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      */
     getSelection: async (): Promise<SelectionData> => {
       try {
-        const result = await callAsyncMethod(Commands.GET_SELECTION);
+        const result = await callNativeMethod('getSelection');
         if (result && typeof result === 'object') {
           return {
             start: result.start ?? 0,
@@ -152,13 +136,17 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      * Insert text at the current cursor position
      * @param text - The text to insert
      */
-    insertText: (text: string) => {
+    insertText: async (text: string) => {
       if (typeof text !== 'string') {
         console.warn('RichTextInput: insertText expects a string');
         return;
       }
       
-      dispatchCommand(Commands.INSERT_TEXT, [text]);
+      try {
+        await callNativeMethod('insertText', text);
+      } catch (error) {
+        console.warn('RichTextInput: insertText failed:', error);
+      }
     },
     
     /**
@@ -167,7 +155,7 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      * @param end - End position of the range
      * @param text - The replacement text
      */
-    replaceText: (start: number, end: number, text: string) => {
+    replaceText: async (start: number, end: number, text: string) => {
       if (typeof start !== 'number' || typeof end !== 'number' || typeof text !== 'string') {
         console.warn('RichTextInput: replaceText expects (number, number, string)');
         return;
@@ -178,7 +166,11 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
         return;
       }
       
-      dispatchCommand(Commands.REPLACE_TEXT, [start, end, text]);
+      try {
+        await callNativeMethod('replaceText', start, end, text);
+      } catch (error) {
+        console.warn('RichTextInput: replaceText failed:', error);
+      }
     },
     
     /**
@@ -186,7 +178,7 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      * @param start - Start position of the selection
      * @param end - End position of the selection
      */
-    setSelection: (start: number, end: number) => {
+    setSelection: async (start: number, end: number) => {
       if (typeof start !== 'number' || typeof end !== 'number') {
         console.warn('RichTextInput: setSelection expects (number, number)');
         return;
@@ -197,7 +189,11 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
         return;
       }
       
-      dispatchCommand(Commands.SET_SELECTION, [start, end]);
+      try {
+        await callNativeMethod('setSelection', start, end);
+      } catch (error) {
+        console.warn('RichTextInput: setSelection failed:', error);
+      }
     },
     
     /**
@@ -206,7 +202,7 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      */
     getValue: async (): Promise<RichTextValue> => {
       try {
-        const result = await callAsyncMethod(Commands.GET_VALUE);
+        const result = await callNativeMethod('getValue');
         if (result && isRichTextValue(result)) {
           return result;
         }
@@ -229,13 +225,17 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
      * Set the rich text value
      * @param value - The new rich text value
      */
-    setValue: (value: RichTextValue) => {
+    setValue: async (value: RichTextValue) => {
       if (!isRichTextValue(value)) {
         console.warn('RichTextInput: setValue received invalid RichTextValue');
         return;
       }
       
-      dispatchCommand(Commands.SET_VALUE, [value]);
+      try {
+        await callNativeMethod('setValue', value);
+      } catch (error) {
+        console.warn('RichTextInput: setValue failed:', error);
+      }
     }
   }), []);
   
@@ -250,67 +250,96 @@ const RichTextInputView = forwardRef<RichTextInputRef, RichTextInputViewProps>((
   const handleChange = React.useCallback((event: { nativeEvent: any }) => {
     const { nativeEvent } = event;
     
-    if (props.onChange) {
-      // Validate and clean the event data
-      if (nativeEvent?.value && isRichTextValue(nativeEvent.value)) {
-        props.onChange({ nativeEvent: { value: nativeEvent.value } });
-      } else {
-        console.warn('RichTextInput: onChange received invalid event data');
+    // Validate and clean the event data
+    if (nativeEvent?.value && isRichTextValue(nativeEvent.value)) {
+      const cleanEvent = { nativeEvent: { value: nativeEvent.value } };
+      
+      // Call both the new event handler and convenience prop for backward compatibility
+      if (props.onRichTextChange) {
+        props.onRichTextChange(cleanEvent);
       }
+      if (props.onChange) {
+        props.onChange(cleanEvent);
+      }
+    } else {
+      console.warn('RichTextInput: onChange received invalid event data');
     }
-  }, [props.onChange]);
+  }, [props.onRichTextChange, props.onChange]);
   
   // Handle onSelectionChange event
   const handleSelectionChange = React.useCallback((event: { nativeEvent: any }) => {
     const { nativeEvent } = event;
     
-    if (props.onSelectionChange) {
-      // Validate and clean the event data
-      if (typeof nativeEvent?.start === 'number' && 
-          typeof nativeEvent?.end === 'number' && 
-          isRichTextStyle(nativeEvent?.activeStyles)) {
-        props.onSelectionChange({ 
-          nativeEvent: { 
-            start: nativeEvent.start, 
-            end: nativeEvent.end, 
-            activeStyles: nativeEvent.activeStyles 
-          } 
-        });
-      } else {
-        console.warn('RichTextInput: onSelectionChange received invalid event data');
+    // Validate and clean the event data
+    if (typeof nativeEvent?.start === 'number' && 
+        typeof nativeEvent?.end === 'number' && 
+        isRichTextStyle(nativeEvent?.activeStyles)) {
+      const cleanEvent = { 
+        nativeEvent: { 
+          start: nativeEvent.start, 
+          end: nativeEvent.end, 
+          activeStyles: nativeEvent.activeStyles 
+        } 
+      };
+      
+      // Call both the new event handler and convenience prop for backward compatibility
+      if (props.onRichTextSelectionChange) {
+        props.onRichTextSelectionChange(cleanEvent);
       }
+      if (props.onSelectionChange) {
+        props.onSelectionChange(cleanEvent);
+      }
+    } else {
+      console.warn('RichTextInput: onSelectionChange received invalid event data:', nativeEvent);
     }
-  }, [props.onSelectionChange]);
+  }, [props.onRichTextSelectionChange, props.onSelectionChange]);
   
   // Handle onFocus event
   const handleFocus = React.useCallback((event: { nativeEvent: any }) => {
-    if (props.onFocus) {
-      props.onFocus({ nativeEvent: {} });
+    const cleanEvent = { nativeEvent: {} };
+    
+    // Call both the new event handler and convenience prop for backward compatibility
+    if (props.onRichTextFocus) {
+      props.onRichTextFocus(cleanEvent);
     }
-  }, [props.onFocus]);
+    if (props.onFocus) {
+      props.onFocus(cleanEvent);
+    }
+  }, [props.onRichTextFocus, props.onFocus]);
   
   // Handle onBlur event
   const handleBlur = React.useCallback((event: { nativeEvent: any }) => {
-    if (props.onBlur) {
-      props.onBlur({ nativeEvent: {} });
+    const cleanEvent = { nativeEvent: {} };
+    
+    // Call both the new event handler and convenience prop for backward compatibility
+    if (props.onRichTextBlur) {
+      props.onRichTextBlur(cleanEvent);
     }
-  }, [props.onBlur]);
+    if (props.onBlur) {
+      props.onBlur(cleanEvent);
+    }
+  }, [props.onRichTextBlur, props.onBlur]);
   
-  // Prepare props for native component (excluding ref)
+  // Prepare props for native component (excluding both old and new event handlers)
   const { 
     onChange: _onChange,
     onSelectionChange: _onSelectionChange,
     onFocus: _onFocus,
     onBlur: _onBlur,
+    onRichTextChange: _onRichTextChange,
+    onRichTextSelectionChange: _onRichTextSelectionChange,
+    onRichTextFocus: _onRichTextFocus,
+    onRichTextBlur: _onRichTextBlur,
     ...restProps 
   } = props;
   
-  const nativeProps: RichTextInputViewProps = {
+  const nativeProps: any = {
     ...restProps,
-    onChange: handleChange,
-    onSelectionChange: handleSelectionChange,
-    onFocus: handleFocus,
-    onBlur: handleBlur,
+    // Use the new event names that match the native implementation
+    onRichTextChange: handleChange,
+    onRichTextSelectionChange: handleSelectionChange,
+    onRichTextFocus: handleFocus,
+    onRichTextBlur: handleBlur,
   };
   
   return (

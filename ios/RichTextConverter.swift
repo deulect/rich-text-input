@@ -330,29 +330,27 @@ class RichTextConverter {
    * Create a font with specific traits applied
    */
   private static func createFontWithTraits(from font: UIFont, bold: Bool, italic: Bool) -> UIFont {
-    var fontDescriptor = font.fontDescriptor
-    var symbolicTraits = fontDescriptor.symbolicTraits
+    let fontSize = font.pointSize
     
-    // Apply bold trait
-    if bold {
-      symbolicTraits.insert(.traitBold)
+    // Use system fonts for better reliability
+    if bold && italic {
+      // Bold + Italic - try to create bold italic font
+      if let boldItalicFont = UIFont.systemFont(ofSize: fontSize, weight: .bold).withTraits(.traitItalic) {
+        return boldItalicFont
+      } else {
+        // Fallback to just bold if bold italic fails
+        return UIFont.boldSystemFont(ofSize: fontSize)
+      }
+    } else if bold {
+      // Bold only
+      return UIFont.boldSystemFont(ofSize: fontSize)
+    } else if italic {
+      // Italic only
+      return UIFont.italicSystemFont(ofSize: fontSize)
     } else {
-      symbolicTraits.remove(.traitBold)
+      // Regular
+      return UIFont.systemFont(ofSize: fontSize)
     }
-    
-    // Apply italic trait
-    if italic {
-      symbolicTraits.insert(.traitItalic)
-    } else {
-      symbolicTraits.remove(.traitItalic)
-    }
-    
-    // Create new font descriptor with updated traits
-    guard let newFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits) else {
-      return font // Return original font if trait modification fails
-    }
-    
-    return UIFont(descriptor: newFontDescriptor, size: font.pointSize)
   }
   
   // MARK: - Utility Methods
@@ -401,7 +399,7 @@ class RichTextConverter {
     let sortedSpans = spans.sorted { $0.start < $1.start }
     
     for span in sortedSpans {
-      var currentSpan = span
+      let currentSpan = span
       
       // Check for overlaps with existing spans
       for i in 0..<resolvedSpans.count {
@@ -430,5 +428,13 @@ extension RichTextConverter {
     case italic
     case underline
     case strikethrough
+  }
+}
+
+// MARK: - UIFont Extension
+extension UIFont {
+  func withTraits(_ traits: UIFontDescriptor.SymbolicTraits) -> UIFont? {
+    let descriptor = fontDescriptor.withSymbolicTraits(traits)
+    return descriptor.map { UIFont(descriptor: $0, size: pointSize) }
   }
 } 

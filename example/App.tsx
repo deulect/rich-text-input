@@ -49,49 +49,73 @@ export default function App() {
   };
 
   // Toolbar actions
-  const toggleBold = () => {
-    richTextRef.current?.applyStyle(createRichTextStyle(
-      !selection.activeStyles.bold,
-      selection.activeStyles.italic,
-      selection.activeStyles.underline,
-      selection.activeStyles.strikethrough
-    ));
+  const toggleBold = async () => {
+    try {
+      await richTextRef.current?.applyStyle(createRichTextStyle(
+        !selection.activeStyles.bold,
+        selection.activeStyles.italic,
+        selection.activeStyles.underline,
+        selection.activeStyles.strikethrough
+      ));
+    } catch (error) {
+      console.error('Failed to toggle bold:', error);
+    }
   };
 
-  const toggleItalic = () => {
-    richTextRef.current?.applyStyle(createRichTextStyle(
-      selection.activeStyles.bold,
-      !selection.activeStyles.italic,
-      selection.activeStyles.underline,
-      selection.activeStyles.strikethrough
-    ));
+  const toggleItalic = async () => {
+    try {
+      await richTextRef.current?.applyStyle(createRichTextStyle(
+        selection.activeStyles.bold,
+        !selection.activeStyles.italic,
+        selection.activeStyles.underline,
+        selection.activeStyles.strikethrough
+      ));
+    } catch (error) {
+      console.error('Failed to toggle italic:', error);
+    }
   };
 
-  const toggleUnderline = () => {
-    richTextRef.current?.applyStyle(createRichTextStyle(
-      selection.activeStyles.bold,
-      selection.activeStyles.italic,
-      !selection.activeStyles.underline,
-      selection.activeStyles.strikethrough
-    ));
+  const toggleUnderline = async () => {
+    try {
+      await richTextRef.current?.applyStyle(createRichTextStyle(
+        selection.activeStyles.bold,
+        selection.activeStyles.italic,
+        !selection.activeStyles.underline,
+        selection.activeStyles.strikethrough
+      ));
+    } catch (error) {
+      console.error('Failed to toggle underline:', error);
+    }
   };
 
-  const toggleStrikethrough = () => {
-    richTextRef.current?.applyStyle(createRichTextStyle(
-      selection.activeStyles.bold,
-      selection.activeStyles.italic,
-      selection.activeStyles.underline,
-      !selection.activeStyles.strikethrough
-    ));
+  const toggleStrikethrough = async () => {
+    try {
+      await richTextRef.current?.applyStyle(createRichTextStyle(
+        selection.activeStyles.bold,
+        selection.activeStyles.italic,
+        selection.activeStyles.underline,
+        !selection.activeStyles.strikethrough
+      ));
+    } catch (error) {
+      console.error('Failed to toggle strikethrough:', error);
+    }
   };
 
   // Imperative method examples
-  const handleClear = () => {
-    richTextRef.current?.clear();
+  const handleClear = async () => {
+    try {
+      await richTextRef.current?.clear();
+    } catch (error) {
+      console.error('Failed to clear:', error);
+    }
   };
 
-  const handleInsertText = () => {
-    richTextRef.current?.insertText(' [Inserted Text] ');
+  const handleInsertText = async () => {
+    try {
+      await richTextRef.current?.insertText(' [Inserted Text] ');
+    } catch (error) {
+      console.error('Failed to insert text:', error);
+    }
   };
 
   const handleGetValue = async () => {
@@ -103,17 +127,21 @@ export default function App() {
     }
   };
 
-  const handleSetSampleText = () => {
-    const sampleValue = createRichTextValue(
-      'This is sample rich text with formatting!',
-      [
-        { start: 0, end: 4, attributes: { bold: true } },
-        { start: 8, end: 14, attributes: { italic: true } },
-        { start: 15, end: 24, attributes: { underline: true } },
-        { start: 30, end: 40, attributes: { strikethrough: true } }
-      ]
-    );
-    richTextRef.current?.setValue(sampleValue);
+  const handleSetSampleText = async () => {
+    try {
+      const sampleValue = createRichTextValue(
+        'This is sample rich text with formatting!',
+        [
+          { start: 0, end: 4, attributes: { bold: true } },
+          { start: 8, end: 14, attributes: { italic: true } },
+          { start: 15, end: 24, attributes: { underline: true } },
+          { start: 30, end: 40, attributes: { strikethrough: true } }
+        ]
+      );
+      await richTextRef.current?.setValue(sampleValue);
+    } catch (error) {
+      console.error('Failed to set sample text:', error);
+    }
   };
 
   return (
